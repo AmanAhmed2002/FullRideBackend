@@ -13,7 +13,15 @@ export async function createRideHandler(req: Request, res: Response, next: NextF
 
 export async function getRideHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const ride = await rideService.getRideById(req.params.ride_id)
+    const rideId = req.params.ride_id;
+    
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(rideId)) {
+      return res.status(400).json({ error: 'Invalid ride ID format' });
+    }
+    
+    const ride = await rideService.getRideById(rideId)
     res.json(ride)
   } catch (err) {
     next(err)
@@ -32,11 +40,13 @@ export async function getMatchesHandler(req: Request, res: Response, next: NextF
 // Matching handler
 export async function matchRidesHandler(req: Request, res: Response) {
   try {
+    console.log('🔍 Received ride matching request with query:', req.query)
+    
     // Pass all query parameters directly
     const matches = await rideService.findMatchingRides(req.query)
     res.json({ matches })
   } catch (err: any) {
-    console.error('Matching error:', err)
+    console.error('❌ Matching error:', err)
     res.status(500).json({ error: err.message || 'Matching failed' })
   }
 }
@@ -47,6 +57,8 @@ export async function joinRideHandler(req: Request, res: Response) {
     const rideId = req.params.ride_id
     const { user_id, party_count } = req.body
     
+    console.log(`👥 Joining ride ${rideId} with user ${user_id}, party size: ${party_count}`)
+    
     // Join the ride
     await rideService.joinRide(rideId, user_id, party_count)
     
@@ -56,10 +68,10 @@ export async function joinRideHandler(req: Request, res: Response) {
       (sum: number, p: any) => sum + p.party_count, 0
     )
     
-    console.log(`Total participants after join: ${totalParticipants}`)
+    console.log(`👥 Total participants after join: ${totalParticipants}`)
     
     if (totalParticipants >= 4) {
-      console.log(`Ride ${rideId} is now full`)
+      console.log(`🚗 Ride ${rideId} is now full`)
       await supabase
         .from('rides')
         .update({ status: 'full' })
@@ -68,7 +80,7 @@ export async function joinRideHandler(req: Request, res: Response) {
     
     res.json({ success: true })
   } catch (err: any) {
-    console.error('Join error:', err)
+    console.error('❌ Join error:', err)
     res.status(400).json({ error: err.message || 'Join failed' })
   }
 }
@@ -77,7 +89,7 @@ export async function joinRideHandler(req: Request, res: Response) {
 export async function cancelRideHandler(req: Request, res: Response) {
   try {
     const rideId = req.params.ride_id
-    console.log(`Cancelling ride ${rideId}`)
+    console.log(`❌ Cancelling ride ${rideId}`)
     
     await supabase
       .from('rides')
@@ -86,7 +98,7 @@ export async function cancelRideHandler(req: Request, res: Response) {
     
     res.json({ success: true })
   } catch (err: any) {
-    console.error('Cancel error:', err)
+    console.error('❌ Cancel error:', err)
     res.status(500).json({ error: err.message || 'Cancellation failed' })
   }
 }
@@ -95,7 +107,7 @@ export async function cancelRideHandler(req: Request, res: Response) {
 export async function startRideHandler(req: Request, res: Response) {
   try {
     const rideId = req.params.ride_id
-    console.log(`Starting ride ${rideId}`)
+    console.log(`🚀 Starting ride ${rideId}`)
     
     await supabase
       .from('rides')
@@ -104,7 +116,7 @@ export async function startRideHandler(req: Request, res: Response) {
     
     res.json({ success: true })
   } catch (err: any) {
-    console.error('Start error:', err)
+    console.error('❌ Start error:', err)
     res.status(500).json({ error: err.message || 'Failed to start ride' })
   }
 }

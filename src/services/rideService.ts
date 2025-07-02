@@ -14,14 +14,14 @@ export interface NewRideInput {
 }
 
 export async function createRide(data: NewRideInput) {
-  console.log('Creating ride with data:', data)
+  console.log('🚗 Creating ride with data:', data)
   
   const dep = await lookupWithSafeSpot(data.departure_address, data.event_id)
   const dst = await lookupWithSafeSpot(data.destination_address, data.event_id)
   
-  console.log('Departure info:', dep)
-  console.log('Destination info:', dst)
- // console.log ('Ride data to insert:', rideData)
+  console.log('📍 Departure info:', dep)
+  console.log('🏁 Destination info:', dst)
+
   const { data: ride, error } = await supabase
     .from('rides')
     .insert({
@@ -46,16 +46,16 @@ export async function createRide(data: NewRideInput) {
     .single()
 
   if (error) {
-    console.error('Ride creation error:', JSON.stringify(error, null, 2))
+    console.error('❌ Ride creation error:', JSON.stringify(error, null, 2))
     throw error
   }
   
-  console.log('Ride created with ID:', ride.id)
+  console.log('✅ Ride created with ID:', ride.id)
   return ride.id
 }
 
 export async function getRideById(rideId: string) {
-  console.log('Fetching ride by ID:', rideId)
+  console.log('🔍 Fetching ride by ID:', rideId)
   
   const { data: ride, error } = await supabase
     .from('rides')
@@ -70,11 +70,11 @@ export async function getRideById(rideId: string) {
     .single()
 
   if (error) {
-    console.error('Ride fetch error:', error)
+    console.error('❌ Ride fetch error:', error)
     throw error
   }
   
-  console.log('Fetched ride:', ride)
+  console.log('📋 Fetched ride:', ride)
   return ride
 }
 
@@ -83,7 +83,7 @@ export async function getMatchesForRide(rideId: string) {
 }
 
 export async function joinRide(rideId: string, userId: string, partyCount: number) {
-  console.log(`Joining ride ${rideId} with user ${userId}, party: ${partyCount}`)
+  console.log(`👥 Joining ride ${rideId} with user ${userId}, party: ${partyCount}`)
   
   const { error } = await supabase
     .from('ride_participants')
@@ -94,14 +94,16 @@ export async function joinRide(rideId: string, userId: string, partyCount: numbe
     })
 
   if (error) {
-    console.error('Join ride error:', error)
+    console.error('❌ Join ride error:', error)
     throw error
   }
   
-  console.log('Join successful')
+  console.log('✅ Join successful')
 }
 
 export async function findMatchingRides(criteria: any) {
+  console.log('🔍 Starting ride matching with criteria:', criteria)
+  
   // Parse parameters with proper type conversion
   const departure_lat = parseFloat(criteria.departure_lat)
   const departure_lng = parseFloat(criteria.departure_lng)
@@ -121,7 +123,8 @@ export async function findMatchingRides(criteria: any) {
   if (isNaN(destination_lng)) throw new Error('Invalid destination_lng')
   if (isNaN(party_size)) throw new Error('Invalid party_size')
 
-  console.log('Searching for matching rides with criteria:', {
+  console.log('🔎 Searching for matching rides with:')
+  console.log({
     departure_lat,
     departure_lng,
     destination_lat,
@@ -159,16 +162,16 @@ export async function findMatchingRides(criteria: any) {
   const { data: rides, error } = await query
 
   if (error) {
-    console.error('Ride query error:', error)
+    console.error('❌ Ride query error:', error)
     throw error
   }
   
   if (!rides || rides.length === 0) {
-    console.log('No active rides found')
+    console.log('ℹ️ No active rides found')
     return []
   }
 
-  console.log(`Found ${rides.length} potential rides before filtering`)
+  console.log(`📋 Found ${rides.length} potential rides before filtering`)
 
   // Get joiner's gender for matching
   const { data: joinerProfile } = await supabase
@@ -178,7 +181,7 @@ export async function findMatchingRides(criteria: any) {
     .single()
 
   const joinerGender = joinerProfile?.gender || ''
-  console.log(`Joiner gender: ${joinerGender}`)
+  console.log(`👤 Joiner gender: ${joinerGender}`)
 
   // Filter rides by proximity and capacity
   const filteredRides = rides.filter(ride => {
@@ -193,9 +196,11 @@ export async function findMatchingRides(criteria: any) {
       ride.destination_lat, ride.destination_lng
     )
     
+    console.log(`📏 Ride ${ride.id} distances - Departure: ${depDistance}m, Destination: ${destDistance}m`)
+    
     // Check proximity (500m threshold)
     if (depDistance > 500 || destDistance > 500) {
-      console.log(`Ride ${ride.id} failed proximity check: ${depDistance}m, ${destDistance}m`)
+      console.log(`❌ Ride ${ride.id} failed proximity check`)
       return false
     }
 
@@ -204,23 +209,25 @@ export async function findMatchingRides(criteria: any) {
       (sum: number, p: any) => sum + p.party_count, 0
     ) || 0
     
+    console.log(`👥 Ride ${ride.id} current participants: ${totalParticipants}`)
+    
     // Check capacity
     if (totalParticipants + party_size > 4) {
-      console.log(`Ride ${ride.id} failed capacity check: ${totalParticipants} + ${party_size} > 4`)
+      console.log(`❌ Ride ${ride.id} failed capacity check: ${totalParticipants} + ${party_size} > 4`)
       return false
     }
 
     // Check gender preference if strict
     if (!mixed_gender_ok && ride.creator?.gender !== joinerGender) {
-      console.log(`Ride ${ride.id} failed gender check: ${ride.creator?.gender} vs ${joinerGender}`)
+      console.log(`❌ Ride ${ride.id} failed gender check: ${ride.creator?.gender} vs ${joinerGender}`)
       return false
     }
 
-    console.log(`Ride ${ride.id} passed all checks`)
+    console.log(`✅ Ride ${ride.id} passed all checks`)
     return true
   })
 
-  console.log(`Found ${filteredRides.length} matching rides`)
+  console.log(`�� Found ${filteredRides.length} matching rides`)
   return filteredRides
 }
 

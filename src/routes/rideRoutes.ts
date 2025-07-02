@@ -9,17 +9,16 @@ import {
   cancelRideHandler,
   startRideHandler
 } from '../controllers/rideController';
+import { RequestHandler } from 'express'; // Fixed import
 
 const router = Router();
 
-router.post('/', createRideHandler);
-router.get('/:ride_id', getRideHandler);
-router.get('/:ride_id/matches', getMatchesHandler);
-router.get('/match', matchRidesHandler); // New matching endpoint
-router.post('/:ride_id/join', joinRideHandler); // Join endpoint
-router.post('/:ride_id/cancel', cancelRideHandler); // Cancel endpoint
-router.post('/:ride_id/start', startRideHandler); // Start ride endpoint
-
+router.post('/', createRideHandler as RequestHandler);
+router.get('/match', matchRidesHandler as RequestHandler);
+router.get('/:ride_id', getRideHandler as RequestHandler);
+router.get('/:ride_id/matches', getMatchesHandler as RequestHandler);
+router.post('/:ride_id/join', joinRideHandler as RequestHandler);
+router.post('/:ride_id/cancel', cancelRideHandler as RequestHandler);
+router.post('/:ride_id/start', startRideHandler as RequestHandler);
 
 export default router;
-
